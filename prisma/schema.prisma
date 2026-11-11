@@ -1,0 +1,118 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Expense {
+  id            String   @id @default(cuid())
+  date          DateTime
+  description   String
+  amount        Float
+  category      String
+  vendor        String?
+  paymentMethod String?
+  notes         String?
+  receiptId     String?
+  receipt       Receipt? @relation(fields: [receiptId], references: [id], onDelete: SetNull)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([date])
+  @@index([category])
+}
+
+model Receipt {
+  id        String    @id @default(cuid())
+  filename  String
+  mimeType  String
+  data      String
+  size      Int
+  createdAt DateTime  @default(now())
+  expenses  Expense[]
+}
+
+model InventoryItem {
+  id           String          @id @default(cuid())
+  name         String
+  category     String
+  unit         String
+  quantity     Float           @default(0)
+  reorderLevel Float           @default(0)
+  unitCost     Float           @default(0)
+  location     String?
+  notes        String?
+  movements    StockMovement[]
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@index([category])
+}
+
+model StockMovement {
+  id        String        @id @default(cuid())
+  itemId    String
+  item      InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  type      String
+  quantity  Float
+  date      DateTime      @default(now())
+  note      String?
+  createdAt DateTime      @default(now())
+
+  @@index([itemId])
+  @@index([date])
+}
+
+model Income {
+  id          String   @id @default(cuid())
+  date        DateTime
+  description String
+  amount      Float
+  category    String
+  buyer       String?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([date])
+  @@index([category])
+}
+
+model Livestock {
+  id             String    @id @default(cuid())
+  tag            String
+  species        String
+  breed          String?
+  sex            String?
+  birthDate      DateTime?
+  acquiredDate   DateTime?
+  acquisitionCost Float?
+  status         String    @default("Active")
+  location       String?
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([species])
+  @@index([status])
+}
+
+model Crop {
+  id                   String    @id @default(cuid())
+  name                 String
+  variety              String?
+  plot                 String?
+  area                 Float?
+  areaUnit             String?   @default("ha")
+  plantedDate          DateTime?
+  expectedHarvestDate  DateTime?
+  status               String    @default("Growing")
+  notes                String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([status])
+}
