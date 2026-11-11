@@ -30,7 +30,21 @@ function revalidateAll() {
   revalidatePath("/", "layout");
 }
 
-export async function saveExpense(_prev: ActionState, formData: FormData): Promise<ActionState> {
+function errorMessage(error: unknown) {
+  if (error instanceof Error) return error.message;
+  return "Something went wrong. Please try again.";
+}
+
+export async function saveExpense(previous: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    return await saveExpenseImpl(previous, formData);
+  } catch (error) {
+    console.error("[saveExpense]", error);
+    return { ok: false, error: errorMessage(error) };
+  }
+}
+
+async function saveExpenseImpl(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const id = text(formData, "id") || null;
   const description = text(formData, "description");
   const amount = numberValue(formData, "amount");
@@ -98,7 +112,16 @@ export async function deleteExpense(formData: FormData): Promise<void> {
   revalidateAll();
 }
 
-export async function saveIncome(_prev: ActionState, formData: FormData): Promise<ActionState> {
+export async function saveIncome(previous: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    return await saveIncomeImpl(previous, formData);
+  } catch (error) {
+    console.error("[saveIncome]", error);
+    return { ok: false, error: errorMessage(error) };
+  }
+}
+
+async function saveIncomeImpl(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const id = text(formData, "id") || null;
   const description = text(formData, "description");
   const amount = numberValue(formData, "amount");
@@ -130,7 +153,16 @@ export async function deleteIncome(formData: FormData): Promise<void> {
   revalidateAll();
 }
 
-export async function saveInventoryItem(_prev: ActionState, formData: FormData): Promise<ActionState> {
+export async function saveInventoryItem(previous: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    return await saveInventoryItemImpl(previous, formData);
+  } catch (error) {
+    console.error("[saveInventoryItem]", error);
+    return { ok: false, error: errorMessage(error) };
+  }
+}
+
+async function saveInventoryItemImpl(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const id = text(formData, "id") || null;
   const name = text(formData, "name");
   const category = text(formData, "category") || "Other";
@@ -173,7 +205,16 @@ export async function deleteInventoryItem(formData: FormData): Promise<void> {
   revalidateAll();
 }
 
-export async function recordStockMovement(_prev: ActionState, formData: FormData): Promise<ActionState> {
+export async function recordStockMovement(previous: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    return await recordStockMovementImpl(previous, formData);
+  } catch (error) {
+    console.error("[recordStockMovement]", error);
+    return { ok: false, error: errorMessage(error) };
+  }
+}
+
+async function recordStockMovementImpl(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const itemId = text(formData, "itemId");
   const type = text(formData, "type") || "IN";
   const quantity = numberValue(formData, "quantity");
@@ -219,7 +260,16 @@ export async function recordStockMovement(_prev: ActionState, formData: FormData
   return { ok: true, message: "Stock updated." };
 }
 
-export async function saveLivestock(_prev: ActionState, formData: FormData): Promise<ActionState> {
+export async function saveLivestock(previous: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    return await saveLivestockImpl(previous, formData);
+  } catch (error) {
+    console.error("[saveLivestock]", error);
+    return { ok: false, error: errorMessage(error) };
+  }
+}
+
+async function saveLivestockImpl(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const id = text(formData, "id") || null;
   const tag = text(formData, "tag");
   const species = text(formData, "species") || "Other";
@@ -253,7 +303,16 @@ export async function deleteLivestock(formData: FormData): Promise<void> {
   revalidateAll();
 }
 
-export async function saveCrop(_prev: ActionState, formData: FormData): Promise<ActionState> {
+export async function saveCrop(previous: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    return await saveCropImpl(previous, formData);
+  } catch (error) {
+    console.error("[saveCrop]", error);
+    return { ok: false, error: errorMessage(error) };
+  }
+}
+
+async function saveCropImpl(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const id = text(formData, "id") || null;
   const name = text(formData, "name");
   const variety = optionalText(formData, "variety");
@@ -286,7 +345,16 @@ export async function deleteCrop(formData: FormData): Promise<void> {
   revalidateAll();
 }
 
-export async function importExpenses(_prev: ActionState, formData: FormData): Promise<ActionState> {
+export async function importExpenses(previous: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    return await importExpensesImpl(previous, formData);
+  } catch (error) {
+    console.error("[importExpenses]", error);
+    return { ok: false, error: errorMessage(error) };
+  }
+}
+
+async function importExpensesImpl(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
     return { ok: false, error: "Choose a CSV file to import." };
@@ -331,7 +399,16 @@ export async function importExpenses(_prev: ActionState, formData: FormData): Pr
   return { ok: true, message: `Imported ${data.length} expense(s).` };
 }
 
-export async function importInventory(_prev: ActionState, formData: FormData): Promise<ActionState> {
+export async function importInventory(previous: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    return await importInventoryImpl(previous, formData);
+  } catch (error) {
+    console.error("[importInventory]", error);
+    return { ok: false, error: errorMessage(error) };
+  }
+}
+
+async function importInventoryImpl(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
     return { ok: false, error: "Choose a CSV file to import." };
