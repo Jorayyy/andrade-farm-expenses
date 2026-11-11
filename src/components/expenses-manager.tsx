@@ -3,7 +3,8 @@
 import { useActionState, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { Pencil, Plus, Trash2 } from "lucide-react";
-import { deleteExpense, initialActionState, saveExpense, type ActionState } from "@/app/actions";
+import { deleteExpense, saveExpense } from "@/app/actions";
+import { initialActionState, type ActionState } from "@/lib/action-state";
 import { ConfirmButton, Modal } from "@/components/modal";
 import { ReceiptInput } from "@/components/receipt-input";
 import {

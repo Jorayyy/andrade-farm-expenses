@@ -2,7 +2,8 @@
 
 import { useActionState } from "react";
 import { FileUp } from "lucide-react";
-import { importExpenses, importInventory, initialActionState } from "@/app/actions";
+import { importExpenses, importInventory } from "@/app/actions";
+import { initialActionState } from "@/lib/action-state";
 import { btn, inputClass } from "@/components/ui";
 
 export function ImportForm({ kind }: { kind: "expenses" | "inventory" }) {

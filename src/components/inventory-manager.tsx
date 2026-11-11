@@ -4,11 +4,10 @@ import { useActionState, useState, type ReactNode } from "react";
 import { ArrowDownUp, Pencil, Plus, Trash2 } from "lucide-react";
 import {
   deleteInventoryItem,
-  initialActionState,
   recordStockMovement,
   saveInventoryItem,
-  type ActionState,
 } from "@/app/actions";
+import { initialActionState, type ActionState } from "@/lib/action-state";
 import { ConfirmButton, Modal } from "@/components/modal";
 import {
   Badge,

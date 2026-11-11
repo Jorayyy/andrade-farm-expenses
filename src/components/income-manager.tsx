@@ -2,7 +2,8 @@
 
 import { useActionState, useState, type ReactNode } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
-import { deleteIncome, initialActionState, saveIncome, type ActionState } from "@/app/actions";
+import { deleteIncome, saveIncome } from "@/app/actions";
+import { initialActionState, type ActionState } from "@/lib/action-state";
 import { ConfirmButton, Modal } from "@/components/modal";
 import {
   Badge,

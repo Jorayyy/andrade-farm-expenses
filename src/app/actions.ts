@@ -4,10 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { parseDateInput } from "@/lib/format";
 import { parseCsv, parseCsvDate, parseCsvNumber, rowsToObjects } from "@/lib/csv";
-
-export type ActionState = { ok: boolean; error?: string; message?: string };
-
-export const initialActionState: ActionState = { ok: false };
+import type { ActionState } from "@/lib/action-state";
 
 function text(formData: FormData, key: string) {
   const value = formData.get(key);
