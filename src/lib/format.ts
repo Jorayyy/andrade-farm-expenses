@@ -43,8 +43,8 @@ export function toDateInput(value: Date | string | null | undefined) {
   return `${year}-${month}-${day}`;
 }
 
-export function parseDateInput(value: FormDataEntryValue | null) {
-  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+export function parseDateOnly(value: string | null | undefined) {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
   const date = new Date(`${value}T12:00:00`);
   if (Number.isNaN(date.getTime())) return null;
   const [year, month, day] = value.split("-").map(Number);
@@ -52,6 +52,14 @@ export function parseDateInput(value: FormDataEntryValue | null) {
   return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day
     ? date
     : null;
+}
+
+export function parseDateInput(value: FormDataEntryValue | null) {
+  return typeof value === "string" ? parseDateOnly(value) : null;
+}
+
+export function endOfDay(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
 }
 
 export function startOfMonth(date = new Date()) {

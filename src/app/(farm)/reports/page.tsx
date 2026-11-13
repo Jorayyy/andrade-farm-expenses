@@ -4,7 +4,7 @@ import { ImportForm } from "@/components/import-form";
 import { FilterField, FilterForm, filterInputClass } from "@/components/filters";
 import { Card, PageHeader, StatCard, tdClass, thClass, btn } from "@/components/ui";
 import { prisma } from "@/lib/prisma";
-import { formatPeso, startOfMonth, toDateInput } from "@/lib/format";
+import { endOfDay, formatPeso, parseDateOnly, startOfMonth, toDateInput } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -24,9 +24,9 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   const from = params.from ?? toDateInput(startOfMonth(today));
   const to = params.to ?? toDateInput(today);
 
-  const fromDate = new Date(`${from}T00:00:00`);
-  const toDate = new Date(`${to}T23:59:59`);
-  const range = { gte: fromDate, lte: toDate };
+  const fromDate = parseDateOnly(from) ?? startOfMonth(today);
+  const toDate = parseDateOnly(to) ?? today;
+  const range = { gte: fromDate, lte: endOfDay(toDate) };
 
   const [expenseAgg, incomeAgg, expenseCats, incomeCats, expenseCount, incomeCount] = await Promise.all([
     prisma.expense.aggregate({ where: { date: range }, _sum: { amount: true } }),
@@ -50,7 +50,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   const totalExpenses = Number(expenseAgg._sum.amount ?? 0);
   const totalIncome = Number(incomeAgg._sum.amount ?? 0);
   const net = totalIncome - totalExpenses;
-  const exportQuery = `?from=${from}&to=${to}`;
+  const exportQuery = `?from=${toDateInput(fromDate)}&to=${toDateInput(toDate)}`;
 
   return (
     <>

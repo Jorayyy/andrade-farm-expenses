@@ -1,7 +1,7 @@
 import { isAuthenticated } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { toCsv } from "@/lib/csv";
-import { toDateInput } from "@/lib/format";
+import { endOfDay, parseDateOnly, toDateInput } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -13,9 +13,15 @@ export async function GET(request: Request, { params }: { params: Promise<{ type
   const from = url.searchParams.get("from");
   const to = url.searchParams.get("to");
 
+  const fromDate = parseDateOnly(from);
+  const toDate = parseDateOnly(to);
+  if ((from && !fromDate) || (to && !toDate)) {
+    return new Response("Invalid date range", { status: 400 });
+  }
+
   const dateFilter: { gte?: Date; lte?: Date } = {};
-  if (from) dateFilter.gte = new Date(`${from}T00:00:00`);
-  if (to) dateFilter.lte = new Date(`${to}T23:59:59`);
+  if (fromDate) dateFilter.gte = fromDate;
+  if (toDate) dateFilter.lte = endOfDay(toDate);
   const hasRange = Object.keys(dateFilter).length > 0;
 
   let rows: (string | number | null)[][] = [];

@@ -2,6 +2,7 @@ import { ExpensesManager, type ExpenseRow } from "@/components/expenses-manager"
 import { FilterField, FilterForm, filterInputClass } from "@/components/filters";
 import { Pagination } from "@/components/pagination";
 import { EXPENSE_CATEGORIES } from "@/lib/constants";
+import { endOfDay, parseDateOnly } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -25,8 +26,10 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
   const page = Math.max(1, Number.parseInt(params.page ?? "1", 10) || 1);
 
   const dateFilter: { gte?: Date; lte?: Date } = {};
-  if (from) dateFilter.gte = new Date(`${from}T00:00:00`);
-  if (to) dateFilter.lte = new Date(`${to}T23:59:59`);
+  const fromDate = parseDateOnly(from);
+  const toDate = parseDateOnly(to);
+  if (fromDate) dateFilter.gte = fromDate;
+  if (toDate) dateFilter.lte = endOfDay(toDate);
 
   const where = {
     ...(q
