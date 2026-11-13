@@ -31,14 +31,17 @@ export async function GET(request: Request, { params }: { params: Promise<{ type
       const expenses = await prisma.expense.findMany({
         where: hasRange ? { date: dateFilter } : undefined,
         orderBy: { date: "asc" },
+        include: { paddy: { select: { code: true } }, season: { select: { label: true } } },
       });
       rows = [
-        ["Date", "Description", "Category", "Amount", "Vendor", "Payment Method", "Notes"],
+        ["Date", "Description", "Category", "Amount", "Paddy", "Season", "Vendor", "Payment Method", "Notes"],
         ...expenses.map((row) => [
           toDateInput(row.date),
           row.description,
           row.category,
           Number(row.amount),
+          row.paddy?.code ?? null,
+          row.season?.label ?? null,
           row.vendor,
           row.paymentMethod,
           row.notes,
@@ -50,15 +53,185 @@ export async function GET(request: Request, { params }: { params: Promise<{ type
       const income = await prisma.income.findMany({
         where: hasRange ? { date: dateFilter } : undefined,
         orderBy: { date: "asc" },
+        include: { paddy: { select: { code: true } }, season: { select: { label: true } } },
       });
       rows = [
-        ["Date", "Description", "Category", "Amount", "Buyer", "Notes"],
+        ["Date", "Description", "Category", "Amount", "Paddy", "Season", "Buyer", "Notes"],
         ...income.map((row) => [
           toDateInput(row.date),
           row.description,
           row.category,
           Number(row.amount),
+          row.paddy?.code ?? null,
+          row.season?.label ?? null,
           row.buyer,
+          row.notes,
+        ]),
+      ];
+      break;
+    }
+    case "paddies": {
+      const paddies = await prisma.paddy.findMany({
+        orderBy: { code: "asc" },
+        include: { seasons: { include: { variety: true }, orderBy: { plantingDate: "desc" }, take: 1 } },
+      });
+      rows = [
+        [
+          "Code",
+          "Name",
+          "Area (ha)",
+          "Length (m)",
+          "Width (m)",
+          "Soil",
+          "Irrigation",
+          "Water Source",
+          "Elevation (m)",
+          "Latitude",
+          "Longitude",
+          "Status",
+          "Latest Season",
+          "Variety",
+          "Planted",
+          "Actual Yield (kg)",
+          "Notes",
+        ],
+        ...paddies.map((row) => {
+          const season = row.seasons[0];
+          return [
+            row.code,
+            row.name,
+            Number(row.areaHa),
+            row.lengthM,
+            row.widthM,
+            row.soilType,
+            row.irrigationType,
+            row.waterSource,
+            row.elevationM,
+            row.latitude,
+            row.longitude,
+            row.status,
+            season?.label ?? null,
+            season?.variety?.name ?? null,
+            season?.plantingDate ? toDateInput(season.plantingDate) : null,
+            season?.actualYieldKg === null || season?.actualYieldKg === undefined
+              ? null
+              : Number(season.actualYieldKg),
+            row.notes,
+          ];
+        }),
+      ];
+      break;
+    }
+    case "seasons": {
+      const seasons = await prisma.season.findMany({
+        orderBy: { plantingDate: "desc" },
+        include: { paddy: { select: { code: true, areaHa: true } }, variety: { select: { name: true } } },
+      });
+      rows = [
+        [
+          "Paddy",
+          "Season",
+          "Type",
+          "Method",
+          "Variety",
+          "Status",
+          "Planted",
+          "Expected Harvest",
+          "Harvested",
+          "Area (ha)",
+          "Actual Yield (kg)",
+          "Yield (t/ha)",
+          "Moisture (%)",
+          "Price (PHP/kg)",
+          "N (kg/ha)",
+          "P2O5 (kg/ha)",
+          "K2O (kg/ha)",
+        ],
+        ...seasons.map((row) => {
+          const area = Number(row.paddy.areaHa);
+          const kg = row.actualYieldKg === null ? null : Number(row.actualYieldKg);
+          return [
+            row.paddy.code,
+            row.label,
+            row.seasonType,
+            row.method,
+            row.variety?.name ?? null,
+            row.status,
+            row.plantingDate ? toDateInput(row.plantingDate) : null,
+            row.expectedHarvestDate ? toDateInput(row.expectedHarvestDate) : null,
+            row.harvestDate ? toDateInput(row.harvestDate) : null,
+            area,
+            kg,
+            kg === null || area <= 0 ? null : kg / 1000 / area,
+            row.grainMoisturePct,
+            row.pricePerKg === null ? null : Number(row.pricePerKg),
+            row.nAppliedKg,
+            row.pAppliedKg,
+            row.kAppliedKg,
+          ];
+        }),
+      ];
+      break;
+    }
+    case "water": {
+      const logs = await prisma.waterLog.findMany({
+        orderBy: { date: "asc" },
+        include: { paddy: { select: { code: true } }, season: { select: { label: true } } },
+        take: 5000,
+      });
+      rows = [
+        ["Date", "Paddy", "Season", "Depth (cm)", "Irrigation (mm)", "Rain (mm)", "Drainage (mm)", "Note"],
+        ...logs.map((row) => [
+          toDateInput(row.date),
+          row.paddy.code,
+          row.season?.label ?? null,
+          row.waterDepthCm,
+          row.irrigationMm,
+          row.rainfallMm,
+          row.drainageMm,
+          row.note,
+        ]),
+      ];
+      break;
+    }
+    case "operations": {
+      const operations = await prisma.fieldOperation.findMany({
+        orderBy: { date: "asc" },
+        include: { paddy: { select: { code: true } }, season: { select: { label: true } } },
+        take: 5000,
+      });
+      rows = [
+        ["Date", "Paddy", "Season", "Type", "Description", "Quantity", "Unit", "Cost (PHP)", "Notes"],
+        ...operations.map((row) => [
+          toDateInput(row.date),
+          row.paddy.code,
+          row.season?.label ?? null,
+          row.type,
+          row.description,
+          row.quantity,
+          row.unit,
+          row.cost === null ? null : Number(row.cost),
+          row.notes,
+        ]),
+      ];
+      break;
+    }
+    case "tasks": {
+      const tasks = await prisma.task.findMany({
+        orderBy: { dueDate: "asc" },
+        include: { paddy: { select: { code: true } }, season: { select: { label: true } } },
+        take: 5000,
+      });
+      rows = [
+        ["Due Date", "Paddy", "Season", "Task", "Type", "Priority", "Status", "Notes"],
+        ...tasks.map((row) => [
+          toDateInput(row.dueDate),
+          row.paddy?.code ?? null,
+          row.season?.label ?? null,
+          row.title,
+          row.type,
+          row.priority,
+          row.status,
           row.notes,
         ]),
       ];

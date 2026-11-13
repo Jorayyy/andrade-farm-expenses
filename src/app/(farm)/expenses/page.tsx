@@ -45,14 +45,21 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
     ...(Object.keys(dateFilter).length > 0 ? { date: dateFilter } : {}),
   };
 
-  const [expenses, total] = await Promise.all([
+  const [expenses, total, paddies, seasons] = await Promise.all([
     prisma.expense.findMany({
       where,
       orderBy: [{ date: "desc" }, { createdAt: "desc" }],
       take: PAGE_SIZE,
       skip: (page - 1) * PAGE_SIZE,
+      include: { paddy: { select: { code: true } } },
     }),
     prisma.expense.count({ where }),
+    prisma.paddy.findMany({ select: { id: true, code: true, name: true }, orderBy: { code: "asc" } }),
+    prisma.season.findMany({
+      select: { id: true, label: true, paddy: { select: { code: true } } },
+      orderBy: { createdAt: "desc" },
+      take: 200,
+    }),
   ]);
 
   const rows: ExpenseRow[] = expenses.map((row) => ({
@@ -65,6 +72,15 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
     paymentMethod: row.paymentMethod,
     notes: row.notes,
     receiptId: row.receiptId,
+    paddyId: row.paddyId,
+    seasonId: row.seasonId,
+    paddyCode: row.paddy?.code ?? null,
+  }));
+
+  const paddyOptions = paddies.map((paddy) => ({ id: paddy.id, label: `${paddy.code} — ${paddy.name}` }));
+  const seasonOptions = seasons.map((season) => ({
+    id: season.id,
+    label: `${season.paddy.code} — ${season.label}`,
   }));
 
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -73,6 +89,8 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
     <>
       <ExpensesManager
         expenses={rows}
+        paddies={paddyOptions}
+        seasons={seasonOptions}
         filters={
         <FilterForm resetHref="/expenses">
           <FilterField label="Search" className="sm:w-56">

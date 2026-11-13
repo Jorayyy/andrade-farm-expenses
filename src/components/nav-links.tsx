@@ -4,12 +4,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Beef,
+  CalendarDays,
   FileSpreadsheet,
   LayoutDashboard,
   Package,
   Receipt,
   Sprout,
   TrendingUp,
+  Waves,
   Wheat,
 } from "lucide-react";
 import { NAV_ITEMS } from "@/lib/constants";
@@ -17,6 +19,8 @@ import { cn } from "@/lib/format";
 
 const icons = {
   LayoutDashboard,
+  Waves,
+  CalendarDays,
   Receipt,
   TrendingUp,
   Package,

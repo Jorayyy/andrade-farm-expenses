@@ -27,9 +27,24 @@ export type IncomeRow = {
   category: string;
   buyer: string | null;
   notes: string | null;
+  paddyId: string | null;
+  seasonId: string | null;
+  paddyCode: string | null;
 };
 
-export function IncomeManager({ income, filters }: { income: IncomeRow[]; filters?: ReactNode }) {
+type Option = { id: string; label: string };
+
+export function IncomeManager({
+  income,
+  filters,
+  paddies = [],
+  seasons = [],
+}: {
+  income: IncomeRow[];
+  filters?: ReactNode;
+  paddies?: Option[];
+  seasons?: Option[];
+}) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<IncomeRow | null>(null);
   const [formKey, setFormKey] = useState(0);
@@ -81,6 +96,7 @@ export function IncomeManager({ income, filters }: { income: IncomeRow[]; filter
                 <th className={thClass}>Date</th>
                 <th className={thClass}>Description</th>
                 <th className={thClass}>Category</th>
+                <th className={thClass}>Paddy</th>
                 <th className={thClass}>Buyer</th>
                 <th className={`${thClass} text-right`}>Amount</th>
                 <th className={`${thClass} text-right`}>Actions</th>
@@ -98,6 +114,13 @@ export function IncomeManager({ income, filters }: { income: IncomeRow[]; filter
                   </td>
                   <td className={tdClass}>
                     <Badge tone="blue">{row.category}</Badge>
+                  </td>
+                  <td className={tdClass}>
+                    {row.paddyCode ? (
+                      <Badge tone="green">{row.paddyCode}</Badge>
+                    ) : (
+                      <span className="text-xs text-stone-400">Unassigned</span>
+                    )}
                   </td>
                   <td className={tdClass}>{row.buyer ?? "—"}</td>
                   <td className={`${tdClass} text-right font-semibold text-emerald-600`}>
@@ -184,6 +207,29 @@ export function IncomeManager({ income, filters }: { income: IncomeRow[]; filter
                 placeholder="e.g. Local trader"
                 className={inputClass}
               />
+            </Field>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Paddy (optional)" hint="Links this sale to a paddy's season profit">
+              <select name="paddyId" defaultValue={editing?.paddyId ?? ""} className={inputClass}>
+                <option value="">Farm-wide</option>
+                {paddies.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Season (optional)">
+              <select name="seasonId" defaultValue={editing?.seasonId ?? ""} className={inputClass}>
+                <option value="">No season</option>
+                {seasons.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
             </Field>
           </div>
 

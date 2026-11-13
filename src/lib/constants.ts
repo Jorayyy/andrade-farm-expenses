@@ -2,9 +2,12 @@ export const EXPENSE_CATEGORIES = [
   "Seeds",
   "Fertilizer",
   "Pesticides",
+  "Irrigation",
+  "Land Preparation",
+  "Harvest & Drying",
+  "Labor",
   "Feed",
   "Veterinary",
-  "Labor",
   "Fuel",
   "Equipment",
   "Transport",
@@ -51,6 +54,9 @@ export const UNITS = [
   "pack",
   "head",
   "bottle",
+  "ha",
+  "mm",
+  "cm",
 ] as const;
 
 export const PAYMENT_METHODS = [
@@ -93,12 +99,91 @@ export const CROP_STATUSES = [
 
 export const AREA_UNITS = ["ha", "sqm", "acre"] as const;
 
+// ---------------------------------------------------------------------------
+// Rice paddy options
+// ---------------------------------------------------------------------------
+
+export const PADDY_STATUSES = ["Active", "Fallow", "Rented out"] as const;
+
+export const IRRIGATION_TYPES = ["Irrigated", "Partially irrigated", "Rainfed"] as const;
+
+export const WATER_SOURCES = [
+  "NIA canal",
+  "Deep well",
+  "Shallow tube well",
+  "River",
+  "Spring",
+  "Pond",
+  "Rain only",
+  "Other",
+] as const;
+
+export const SOIL_TYPES = [
+  "Clay",
+  "Clay loam",
+  "Silty clay",
+  "Loam",
+  "Silt loam",
+  "Sandy loam",
+  "Sandy",
+  "Other",
+] as const;
+
+export const SEASON_TYPES = ["Wet", "Dry"] as const;
+
+export const PLANTING_METHODS = ["Transplanted", "Direct-seeded"] as const;
+
+export const SEASON_STATUSES = [
+  "Planned",
+  "Land preparation",
+  "Nursery",
+  "Vegetative",
+  "Reproductive",
+  "Ripening",
+  "Harvested",
+  "Failed",
+] as const;
+
+export const OPERATION_TYPES = [
+  "Land preparation",
+  "Nursery / sowing",
+  "Transplanting",
+  "Basal fertilizer",
+  "Topdress fertilizer",
+  "Pesticide",
+  "Herbicide",
+  "Weeding",
+  "Irrigation",
+  "Drainage",
+  "Harvest",
+  "Other",
+] as const;
+
+export const ISSUE_TYPES = ["Pest", "Disease", "Weed", "Nutrient", "Water", "Weather", "Other"] as const;
+
+export const TASK_TYPES = [
+  "Irrigation",
+  "Fertilizer",
+  "Spray",
+  "Scouting",
+  "Weeding",
+  "Harvest",
+  "Maintenance",
+  "Other",
+] as const;
+
+export const TASK_PRIORITIES = ["Low", "Normal", "High", "Urgent"] as const;
+
+export const TASK_STATUSES = ["Open", "Done", "Skipped"] as const;
+
 export const NAV_ITEMS = [
   { href: "/", label: "Dashboard", icon: "LayoutDashboard" },
+  { href: "/paddies", label: "Paddies", icon: "Waves" },
+  { href: "/planner", label: "Planner", icon: "CalendarDays" },
   { href: "/expenses", label: "Expenses", icon: "Receipt" },
   { href: "/income", label: "Income", icon: "TrendingUp" },
   { href: "/inventory", label: "Inventory", icon: "Package" },
   { href: "/livestock", label: "Livestock", icon: "Beef" },
-  { href: "/crops", label: "Crops", icon: "Sprout" },
+  { href: "/crops", label: "Other crops", icon: "Sprout" },
   { href: "/reports", label: "Reports", icon: "FileSpreadsheet" },
 ] as const;

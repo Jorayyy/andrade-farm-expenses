@@ -57,6 +57,8 @@ async function saveExpenseImpl(_prev: ActionState, formData: FormData): Promise<
   const vendor = optionalText(formData, "vendor");
   const paymentMethod = optionalText(formData, "paymentMethod");
   const notes = optionalText(formData, "notes");
+  const paddyId = optionalText(formData, "paddyId");
+  const seasonId = optionalText(formData, "seasonId");
   const receiptData = text(formData, "receiptData");
   const receiptName = text(formData, "receiptName") || "receipt.jpg";
 
@@ -84,6 +86,8 @@ async function saveExpenseImpl(_prev: ActionState, formData: FormData): Promise<
     vendor,
     paymentMethod,
     notes,
+    paddyId,
+    seasonId,
   };
 
   if (id) {
@@ -135,12 +139,14 @@ async function saveIncomeImpl(_prev: ActionState, formData: FormData): Promise<A
   const category = text(formData, "category") || "Other";
   const buyer = optionalText(formData, "buyer");
   const notes = optionalText(formData, "notes");
+  const paddyId = optionalText(formData, "paddyId");
+  const seasonId = optionalText(formData, "seasonId");
 
   if (!description) return { ok: false, error: "Description is required." };
   if (!date) return { ok: false, error: "A valid date is required." };
   if (amount === null || amount < 0) return { ok: false, error: "Amount must be a positive number." };
 
-  const data = { date, description, amount, category, buyer, notes };
+  const data = { date, description, amount, category, buyer, notes, paddyId, seasonId };
 
   if (id) {
     await prisma.income.update({ where: { id }, data });

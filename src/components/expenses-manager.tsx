@@ -31,14 +31,23 @@ export type ExpenseRow = {
   paymentMethod: string | null;
   notes: string | null;
   receiptId: string | null;
+  paddyId: string | null;
+  seasonId: string | null;
+  paddyCode: string | null;
 };
+
+type Option = { id: string; label: string };
 
 export function ExpensesManager({
   expenses,
   filters,
+  paddies = [],
+  seasons = [],
 }: {
   expenses: ExpenseRow[];
   filters?: ReactNode;
+  paddies?: Option[];
+  seasons?: Option[];
 }) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<ExpenseRow | null>(null);
@@ -94,6 +103,7 @@ export function ExpensesManager({
                 <th className={thClass}>Date</th>
                 <th className={thClass}>Description</th>
                 <th className={thClass}>Category</th>
+                <th className={thClass}>Paddy</th>
                 <th className={thClass}>Vendor</th>
                 <th className={thClass}>Method</th>
                 <th className={`${thClass} text-right`}>Amount</th>
@@ -113,6 +123,13 @@ export function ExpensesManager({
                   </td>
                   <td className={tdClass}>
                     <Badge tone="green">{row.category}</Badge>
+                  </td>
+                  <td className={tdClass}>
+                    {row.paddyCode ? (
+                      <Badge tone="blue">{row.paddyCode}</Badge>
+                    ) : (
+                      <span className="text-xs text-stone-400">Unassigned</span>
+                    )}
                   </td>
                   <td className={tdClass}>{row.vendor ?? "—"}</td>
                   <td className={tdClass}>{row.paymentMethod ?? "—"}</td>
@@ -239,6 +256,29 @@ export function ExpensesManager({
                 placeholder="Optional details"
                 className={inputClass}
               />
+            </Field>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Paddy (optional)" hint="Links this cost to a paddy's season profit">
+              <select name="paddyId" defaultValue={editing?.paddyId ?? ""} className={inputClass}>
+                <option value="">Farm-wide</option>
+                {paddies.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Season (optional)">
+              <select name="seasonId" defaultValue={editing?.seasonId ?? ""} className={inputClass}>
+                <option value="">No season</option>
+                {seasons.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
             </Field>
           </div>
 
