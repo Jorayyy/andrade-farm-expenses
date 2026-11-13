@@ -90,7 +90,13 @@ There is no public sign-up. The whole dashboard is protected by one shared passw
    - `AUTH_PASSWORD` — the shared farm password.
    - `SESSION_SECRET` — 32+ random characters.
    - `TZ` — `Asia/Manila`.
-3. Deploy. `vercel-build` runs `prisma migrate deploy` before `next build`, so schema changes are applied automatically.
+3. Before deploying a schema change, run migrations from a trusted machine against the direct URL:
+
+   ```bash
+   npm run db:deploy
+   ```
+
+   Then deploy normally. Keeping migrations out of the Vercel build avoids failures when the Neon URL contains `channel_binding=require`, which Prisma’s migration engine does not accept.
 4. Open the deployment, sign in, and keep the URL private. Health checks are at `/api/health` (returns only `{ "ok": true }` or a 503).
 
 Neon keeps automated backups/PITR depending on your plan. In addition, use **Reports → Export CSV** regularly as an independent, human-readable backup.
