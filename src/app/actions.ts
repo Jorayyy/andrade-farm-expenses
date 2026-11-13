@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { parseDateInput } from "@/lib/format";
 import { parseCsv, parseCsvDate, parseCsvNumber, rowsToObjects } from "@/lib/csv";
@@ -27,12 +28,18 @@ function revalidateAll() {
   revalidatePath("/", "layout");
 }
 
+class UserError extends Error {}
+
 function errorMessage(error: unknown) {
-  if (error instanceof Error) return error.message;
-  return "Something went wrong. Please try again.";
+  // Never send database or infrastructure details to the browser.
+  return error instanceof UserError ? error.message : "Something went wrong. Please try again.";
 }
 
+const MAX_IMPORT_BYTES = 5_000_000;
+const MAX_IMPORT_ROWS = 5000;
+
 export async function saveExpense(previous: ActionState, formData: FormData): Promise<ActionState> {
+  await requireAuth();
   try {
     return await saveExpenseImpl(previous, formData);
   } catch (error) {
@@ -99,6 +106,7 @@ async function saveExpenseImpl(_prev: ActionState, formData: FormData): Promise<
 }
 
 export async function deleteExpense(formData: FormData): Promise<void> {
+  await requireAuth();
   const id = text(formData, "id");
   if (!id) return;
   const expense = await prisma.expense.findUnique({ where: { id }, select: { receiptId: true } });
@@ -110,6 +118,7 @@ export async function deleteExpense(formData: FormData): Promise<void> {
 }
 
 export async function saveIncome(previous: ActionState, formData: FormData): Promise<ActionState> {
+  await requireAuth();
   try {
     return await saveIncomeImpl(previous, formData);
   } catch (error) {
@@ -144,6 +153,7 @@ async function saveIncomeImpl(_prev: ActionState, formData: FormData): Promise<A
 }
 
 export async function deleteIncome(formData: FormData): Promise<void> {
+  await requireAuth();
   const id = text(formData, "id");
   if (!id) return;
   await prisma.income.delete({ where: { id } });
@@ -151,6 +161,7 @@ export async function deleteIncome(formData: FormData): Promise<void> {
 }
 
 export async function saveInventoryItem(previous: ActionState, formData: FormData): Promise<ActionState> {
+  await requireAuth();
   try {
     return await saveInventoryItemImpl(previous, formData);
   } catch (error) {
@@ -181,14 +192,16 @@ async function saveInventoryItemImpl(_prev: ActionState, formData: FormData): Pr
       data: { name, category, unit, reorderLevel, unitCost, location, notes },
     });
   } else {
-    const item = await prisma.inventoryItem.create({
-      data: { name, category, unit, quantity, reorderLevel, unitCost, location, notes },
-    });
-    if (quantity > 0) {
-      await prisma.stockMovement.create({
-        data: { itemId: item.id, type: "IN", quantity, note: "Opening stock" },
+    await prisma.$transaction(async (tx) => {
+      const item = await tx.inventoryItem.create({
+        data: { name, category, unit, quantity, reorderLevel, unitCost, location, notes },
       });
-    }
+      if (quantity > 0) {
+        await tx.stockMovement.create({
+          data: { itemId: item.id, type: "IN", quantity, note: "Opening stock" },
+        });
+      }
+    });
   }
 
   revalidateAll();
@@ -196,6 +209,7 @@ async function saveInventoryItemImpl(_prev: ActionState, formData: FormData): Pr
 }
 
 export async function deleteInventoryItem(formData: FormData): Promise<void> {
+  await requireAuth();
   const id = text(formData, "id");
   if (!id) return;
   await prisma.inventoryItem.delete({ where: { id } });
@@ -203,6 +217,7 @@ export async function deleteInventoryItem(formData: FormData): Promise<void> {
 }
 
 export async function recordStockMovement(previous: ActionState, formData: FormData): Promise<ActionState> {
+  await requireAuth();
   try {
     return await recordStockMovementImpl(previous, formData);
   } catch (error) {
@@ -220,44 +235,45 @@ async function recordStockMovementImpl(_prev: ActionState, formData: FormData): 
 
   if (!itemId) return { ok: false, error: "Missing inventory item." };
   if (quantity === null || quantity < 0) return { ok: false, error: "Quantity must be zero or greater." };
+  if (!["IN", "OUT", "ADJUST"].includes(type)) return { ok: false, error: "Unknown movement type." };
 
   const item = await prisma.inventoryItem.findUnique({ where: { id: itemId } });
   if (!item) return { ok: false, error: "Inventory item not found." };
 
-  let delta: number;
-  let newQuantity: number;
-  if (type === "IN") {
-    delta = quantity;
-    newQuantity = item.quantity + quantity;
-  } else if (type === "OUT") {
-    if (quantity > item.quantity) {
-      return { ok: false, error: `Only ${item.quantity} ${item.unit} available.` };
+  await prisma.$transaction(async (tx) => {
+    if (type === "IN") {
+      await tx.inventoryItem.update({
+        where: { id: itemId },
+        data: { quantity: { increment: quantity } },
+      });
+      await tx.stockMovement.create({ data: { itemId, type, quantity, date, note } });
+      return;
     }
-    delta = -quantity;
-    newQuantity = item.quantity - quantity;
-  } else {
-    delta = quantity - item.quantity;
-    newQuantity = quantity;
-  }
 
-  await prisma.$transaction([
-    prisma.stockMovement.create({
-      data: {
-        itemId,
-        type,
-        quantity: delta,
-        date,
-        note,
-      },
-    }),
-    prisma.inventoryItem.update({ where: { id: itemId }, data: { quantity: newQuantity } }),
-  ]);
+    if (type === "OUT") {
+      const updated = await tx.inventoryItem.updateMany({
+        where: { id: itemId, quantity: { gte: quantity } },
+        data: { quantity: { decrement: quantity } },
+      });
+      if (updated.count === 0) {
+        throw new UserError(`Only ${item.quantity} ${item.unit} available.`);
+      }
+      await tx.stockMovement.create({ data: { itemId, type, quantity: -quantity, date, note } });
+      return;
+    }
+
+    await tx.inventoryItem.update({ where: { id: itemId }, data: { quantity } });
+    await tx.stockMovement.create({
+      data: { itemId, type, quantity: quantity - item.quantity, date, note },
+    });
+  });
 
   revalidateAll();
   return { ok: true, message: "Stock updated." };
 }
 
 export async function saveLivestock(previous: ActionState, formData: FormData): Promise<ActionState> {
+  await requireAuth();
   try {
     return await saveLivestockImpl(previous, formData);
   } catch (error) {
@@ -294,6 +310,7 @@ async function saveLivestockImpl(_prev: ActionState, formData: FormData): Promis
 }
 
 export async function deleteLivestock(formData: FormData): Promise<void> {
+  await requireAuth();
   const id = text(formData, "id");
   if (!id) return;
   await prisma.livestock.delete({ where: { id } });
@@ -301,6 +318,7 @@ export async function deleteLivestock(formData: FormData): Promise<void> {
 }
 
 export async function saveCrop(previous: ActionState, formData: FormData): Promise<ActionState> {
+  await requireAuth();
   try {
     return await saveCropImpl(previous, formData);
   } catch (error) {
@@ -336,6 +354,7 @@ async function saveCropImpl(_prev: ActionState, formData: FormData): Promise<Act
 }
 
 export async function deleteCrop(formData: FormData): Promise<void> {
+  await requireAuth();
   const id = text(formData, "id");
   if (!id) return;
   await prisma.crop.delete({ where: { id } });
@@ -343,6 +362,7 @@ export async function deleteCrop(formData: FormData): Promise<void> {
 }
 
 export async function importExpenses(previous: ActionState, formData: FormData): Promise<ActionState> {
+  await requireAuth();
   try {
     return await importExpensesImpl(previous, formData);
   } catch (error) {
@@ -357,7 +377,13 @@ async function importExpensesImpl(_prev: ActionState, formData: FormData): Promi
     return { ok: false, error: "Choose a CSV file to import." };
   }
 
+  if (file.size > MAX_IMPORT_BYTES) {
+    return { ok: false, error: "CSV is too large. The limit is 5 MB." };
+  }
   const rows = rowsToObjects(parseCsv(await file.text()));
+  if (rows.length > MAX_IMPORT_ROWS) {
+    return { ok: false, error: `Too many rows. The limit is ${MAX_IMPORT_ROWS}.` };
+  }
   const data: {
     date: Date;
     description: string;
@@ -372,7 +398,7 @@ async function importExpensesImpl(_prev: ActionState, formData: FormData): Promi
     const date = parseCsvDate(row.date);
     const amount = parseCsvNumber(row.amount);
     const description = row.description ?? "";
-    if (!date || amount === null || !description) continue;
+    if (!date || amount === null || amount < 0 || !description) continue;
     data.push({
       date,
       description,
@@ -397,6 +423,7 @@ async function importExpensesImpl(_prev: ActionState, formData: FormData): Promi
 }
 
 export async function importInventory(previous: ActionState, formData: FormData): Promise<ActionState> {
+  await requireAuth();
   try {
     return await importInventoryImpl(previous, formData);
   } catch (error) {
@@ -411,7 +438,13 @@ async function importInventoryImpl(_prev: ActionState, formData: FormData): Prom
     return { ok: false, error: "Choose a CSV file to import." };
   }
 
+  if (file.size > MAX_IMPORT_BYTES) {
+    return { ok: false, error: "CSV is too large. The limit is 5 MB." };
+  }
   const rows = rowsToObjects(parseCsv(await file.text()));
+  if (rows.length > MAX_IMPORT_ROWS) {
+    return { ok: false, error: `Too many rows. The limit is ${MAX_IMPORT_ROWS}.` };
+  }
   const data: {
     name: string;
     category: string;
@@ -425,14 +458,17 @@ async function importInventoryImpl(_prev: ActionState, formData: FormData): Prom
 
   for (const row of rows) {
     const name = row.name ?? "";
-    if (!name) continue;
+    const quantity = parseCsvNumber(row.quantity) ?? 0;
+    const reorderLevel = parseCsvNumber(row.reorderlevel) ?? 0;
+    const unitCost = parseCsvNumber(row.unitcost) ?? 0;
+    if (!name || quantity < 0 || reorderLevel < 0 || unitCost < 0) continue;
     data.push({
       name,
       category: row.category || "Other",
       unit: row.unit || "piece",
-      quantity: parseCsvNumber(row.quantity) ?? 0,
-      reorderLevel: parseCsvNumber(row.reorderlevel) ?? 0,
-      unitCost: parseCsvNumber(row.unitcost) ?? 0,
+      quantity,
+      reorderLevel,
+      unitCost,
       location: row.location || null,
       notes: row.notes || null,
     });
@@ -445,7 +481,18 @@ async function importInventoryImpl(_prev: ActionState, formData: FormData): Prom
     };
   }
 
-  await prisma.inventoryItem.createMany({ data });
+  await prisma.$transaction(
+    data.map((item) =>
+      prisma.inventoryItem.create({
+        data: {
+          ...item,
+          ...(item.quantity > 0
+            ? { movements: { create: { type: "IN", quantity: item.quantity, note: "Opening stock" } } }
+            : {}),
+        },
+      }),
+    ),
+  );
   revalidateAll();
   return { ok: true, message: `Imported ${data.length} item(s).` };
 }

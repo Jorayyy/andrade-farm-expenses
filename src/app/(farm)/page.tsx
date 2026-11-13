@@ -61,16 +61,19 @@ export default async function DashboardPage() {
     prisma.income.findMany({ orderBy: { date: "desc" }, take: 5 }),
   ]);
 
-  const monthExpenses = expenseTotal._sum.amount ?? 0;
-  const monthIncome = incomeTotal._sum.amount ?? 0;
+  const monthExpenses = Number(expenseTotal._sum.amount ?? 0);
+  const monthIncome = Number(incomeTotal._sum.amount ?? 0);
   const net = monthIncome - monthExpenses;
-  const inventoryValue = inventoryItems.reduce((sum, item) => sum + item.quantity * item.unitCost, 0);
+  const inventoryValue = inventoryItems.reduce(
+    (sum, item) => sum + item.quantity * Number(item.unitCost),
+    0,
+  );
   const lowStockAll = inventoryItems.filter((item) => item.quantity <= item.reorderLevel);
   const lowStock = lowStockAll.sort((a, b) => a.quantity - b.quantity).slice(0, 5);
 
   const categoryData = expensesByCategory.map((row) => ({
     name: row.category,
-    value: row._sum.amount ?? 0,
+    value: Number(row._sum.amount ?? 0),
   }));
 
   const months = Array.from({ length: 6 }, (_, index) => addMonths(now, index - 5));
@@ -78,10 +81,10 @@ export default async function DashboardPage() {
     const key = monthKey(month);
     const expenses = trendExpenses
       .filter((row) => monthKey(row.date) === key)
-      .reduce((sum, row) => sum + row.amount, 0);
+      .reduce((sum, row) => sum + Number(row.amount), 0);
     const income = trendIncome
       .filter((row) => monthKey(row.date) === key)
-      .reduce((sum, row) => sum + row.amount, 0);
+      .reduce((sum, row) => sum + Number(row.amount), 0);
     return { month: monthLabel(month), expenses, income };
   });
 

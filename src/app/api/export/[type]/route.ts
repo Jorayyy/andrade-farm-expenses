@@ -1,3 +1,4 @@
+import { isAuthenticated } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { toCsv } from "@/lib/csv";
 import { toDateInput } from "@/lib/format";
@@ -5,6 +6,8 @@ import { toDateInput } from "@/lib/format";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request, { params }: { params: Promise<{ type: string }> }) {
+  if (!(await isAuthenticated())) return new Response("Unauthorized", { status: 401 });
+
   const { type } = await params;
   const url = new URL(request.url);
   const from = url.searchParams.get("from");
@@ -29,7 +32,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ type
           toDateInput(row.date),
           row.description,
           row.category,
-          row.amount,
+          Number(row.amount),
           row.vendor,
           row.paymentMethod,
           row.notes,
@@ -48,7 +51,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ type
           toDateInput(row.date),
           row.description,
           row.category,
-          row.amount,
+          Number(row.amount),
           row.buyer,
           row.notes,
         ]),
@@ -65,8 +68,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ type
           row.unit,
           row.quantity,
           row.reorderLevel,
-          row.unitCost,
-          row.quantity * row.unitCost,
+          Number(row.unitCost),
+          row.quantity * Number(row.unitCost),
           row.location,
           row.notes,
         ]),
@@ -95,7 +98,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ type
           row.sex,
           row.birthDate ? toDateInput(row.birthDate) : null,
           row.acquiredDate ? toDateInput(row.acquiredDate) : null,
-          row.acquisitionCost,
+          row.acquisitionCost === null ? null : Number(row.acquisitionCost),
           row.status,
           row.location,
           row.notes,

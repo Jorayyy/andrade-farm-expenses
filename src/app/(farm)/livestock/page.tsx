@@ -37,7 +37,7 @@ export default async function LivestockPage({ searchParams }: { searchParams: Pr
     sex: row.sex,
     birthDate: row.birthDate ? row.birthDate.toISOString() : null,
     acquiredDate: row.acquiredDate ? row.acquiredDate.toISOString() : null,
-    acquisitionCost: row.acquisitionCost,
+    acquisitionCost: row.acquisitionCost === null ? null : Number(row.acquisitionCost),
     status: row.status,
     location: row.location,
     notes: row.notes,

@@ -12,6 +12,9 @@ A farm management dashboard for tracking expenses, income, inventory, livestock,
 - **Crops** — track plantings, plots, areas, planting/harvest dates, and status.
 - **Reports** — date-range summaries, category breakdowns, CSV export for every module, and CSV import for expenses and inventory.
 - **Search & filters** — every list supports text search, category/status filters, and date ranges where relevant.
+- **Private access** — one shared farm password with a signed, HTTP-only session cookie and login rate limiting.
+- **Exact money** — amounts are stored as Postgres `numeric(12,2)`, not binary floats.
+- **Production safeguards** — database migrations, auth on every page/action/API route, paginated expense and income lists, and backup-friendly CSV exports.
 
 All money is in Philippine pesos (₱).
 
@@ -30,12 +33,21 @@ cp .env.example .env
 ```env
 DATABASE_URL="postgresql://user:password@host-pooler.region.aws.neon.tech/dbname?sslmode=require"
 DIRECT_URL="postgresql://user:password@host.region.aws.neon.tech/dbname?sslmode=require"
+AUTH_PASSWORD="a-long-shared-farm-password"
+SESSION_SECRET="at-least-32-random-characters"
+TZ="Asia/Manila"
 ```
 
-Push the schema to your database:
+Generate a session secret with:
 
 ```bash
-npm run db:push
+node -e "console.log(require('crypto').randomBytes(36).toString('base64url'))"
+```
+
+Apply the database migrations:
+
+```bash
+npm run db:deploy
 ```
 
 Start the dev server:
@@ -44,7 +56,15 @@ Start the dev server:
 npm run dev
 ```
 
-Open http://localhost:3000.
+Open http://localhost:3000 and sign in with `AUTH_PASSWORD`.
+
+## Authentication
+
+There is no public sign-up. The whole dashboard is protected by one shared password stored in `AUTH_PASSWORD`. Login creates a signed, HTTP-only cookie (`SESSION_SECRET`) that lasts 30 days; “Sign out” clears it.
+
+- Change `AUTH_PASSWORD` to rotate the password. Existing sessions stay valid until they expire, so also change `SESSION_SECRET` to sign everyone out.
+- Server actions and `/api/receipts/*`, `/api/export/*` check the session too, not just the pages.
+- Login attempts are limited to 10 per IP per 10 minutes in memory. On serverless hosting this limit is per instance — enough for a family farm, not a public site.
 
 ## Scripts
 
@@ -53,16 +73,27 @@ Open http://localhost:3000.
 | `npm run dev` | Start the development server |
 | `npm run build` | Generate the Prisma client and build for production |
 | `npm run start` | Start the production server |
+| `npm test` | Run the unit tests (session, CSV, date/money helpers) |
 | `npm run lint` | Run ESLint |
-| `npm run db:push` | Push the Prisma schema to the database |
+| `npm run db:migrate` | Create a migration after changing `schema.prisma` |
+| `npm run db:deploy` | Apply pending migrations (use this in production) |
+| `npm run db:push` | Push the schema without a migration (local prototyping only) |
 | `npm run db:generate` | Regenerate the Prisma client |
 | `npm run db:studio` | Open Prisma Studio |
 
 ## Deploying to Vercel
 
 1. Push the repository to GitHub and import it in Vercel.
-2. Add `DATABASE_URL` (pooled Neon connection string) as an environment variable. Optionally add `DIRECT_URL` if you plan to run schema commands.
-3. Deploy. The build runs `prisma generate` automatically.
+2. Add these environment variables in **Project → Settings → Environment Variables**:
+   - `DATABASE_URL` — pooled Neon connection string.
+   - `DIRECT_URL` — direct Neon connection string (used by migrations).
+   - `AUTH_PASSWORD` — the shared farm password.
+   - `SESSION_SECRET` — 32+ random characters.
+   - `TZ` — `Asia/Manila`.
+3. Deploy. `vercel-build` runs `prisma migrate deploy` before `next build`, so schema changes are applied automatically.
+4. Open the deployment, sign in, and keep the URL private. Health checks are at `/api/health` (returns only `{ "ok": true }` or a 503).
+
+Neon keeps automated backups/PITR depending on your plan. In addition, use **Reports → Export CSV** regularly as an independent, human-readable backup.
 
 Receipt images are compressed in the browser and stored as base64 in Postgres, so no extra file storage service is required. For very high volumes, consider moving receipts to Vercel Blob or S3.
 

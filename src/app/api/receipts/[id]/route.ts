@@ -1,8 +1,11 @@
+import { isAuthenticated } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+  if (!(await isAuthenticated())) return new Response("Unauthorized", { status: 401 });
+
   const { id } = await params;
   const receipt = await prisma.receipt.findUnique({ where: { id } });
 

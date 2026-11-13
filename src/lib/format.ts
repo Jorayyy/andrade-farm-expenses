@@ -1,5 +1,8 @@
 import clsx, { type ClassValue } from "clsx";
 
+// Date-only records belong to the farm's day, not the server's UTC day.
+if (typeof window === "undefined") process.env.TZ ||= "Asia/Manila";
+
 export function cn(...inputs: ClassValue[]) {
   return clsx(inputs);
 }
@@ -11,11 +14,11 @@ const pesoFormatter = new Intl.NumberFormat("en-PH", {
   maximumFractionDigits: 2,
 });
 
-export function formatPeso(value: number | null | undefined) {
+export function formatPeso(value: unknown) {
   return pesoFormatter.format(Number(value ?? 0));
 }
 
-export function formatNumber(value: number | null | undefined, digits = 2) {
+export function formatNumber(value: unknown, digits = 2) {
   return new Intl.NumberFormat("en-PH", {
     maximumFractionDigits: digits,
   }).format(Number(value ?? 0));
@@ -41,9 +44,14 @@ export function toDateInput(value: Date | string | null | undefined) {
 }
 
 export function parseDateInput(value: FormDataEntryValue | null) {
-  if (typeof value !== "string" || !value) return null;
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
   const date = new Date(`${value}T12:00:00`);
-  return Number.isNaN(date.getTime()) ? null : date;
+  if (Number.isNaN(date.getTime())) return null;
+  const [year, month, day] = value.split("-").map(Number);
+  // Reject rollovers such as 2026-02-31.
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day
+    ? date
+    : null;
 }
 
 export function startOfMonth(date = new Date()) {

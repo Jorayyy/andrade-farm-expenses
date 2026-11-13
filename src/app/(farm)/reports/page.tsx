@@ -47,8 +47,8 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
     prisma.income.count({ where: { date: range } }),
   ]);
 
-  const totalExpenses = expenseAgg._sum.amount ?? 0;
-  const totalIncome = incomeAgg._sum.amount ?? 0;
+  const totalExpenses = Number(expenseAgg._sum.amount ?? 0);
+  const totalIncome = Number(incomeAgg._sum.amount ?? 0);
   const net = totalIncome - totalExpenses;
   const exportQuery = `?from=${from}&to=${to}`;
 
@@ -105,7 +105,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
               </thead>
               <tbody className="divide-y divide-stone-100">
                 {expenseCats.map((row) => {
-                  const amount = row._sum.amount ?? 0;
+                  const amount = Number(row._sum.amount ?? 0);
                   const share = totalExpenses > 0 ? (amount / totalExpenses) * 100 : 0;
                   return (
                     <tr key={row.category}>
@@ -139,7 +139,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
               </thead>
               <tbody className="divide-y divide-stone-100">
                 {incomeCats.map((row) => {
-                  const amount = row._sum.amount ?? 0;
+                  const amount = Number(row._sum.amount ?? 0);
                   const share = totalIncome > 0 ? (amount / totalIncome) * 100 : 0;
                   return (
                     <tr key={row.category}>

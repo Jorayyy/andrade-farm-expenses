@@ -42,7 +42,7 @@ export default async function InventoryPage({ searchParams }: { searchParams: Pr
     unit: row.unit,
     quantity: row.quantity,
     reorderLevel: row.reorderLevel,
-    unitCost: row.unitCost,
+    unitCost: Number(row.unitCost),
     location: row.location,
     notes: row.notes,
   }));
