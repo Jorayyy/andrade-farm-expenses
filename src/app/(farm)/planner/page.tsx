@@ -172,39 +172,6 @@ export default async function PlannerPage({ searchParams }: { searchParams: Prom
         />
       </div>
 
-      {weather ? (
-        <Card className="mt-6 p-5">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-sm font-bold uppercase tracking-wide text-stone-500">10-day work weather</h2>
-            <p className="text-xs text-stone-500">
-              {weather.isDefaultLocation
-                ? "Set coordinates on a paddy for a local forecast"
-                : `${weather.location.latitude.toFixed(3)}, ${weather.location.longitude.toFixed(3)}`}
-            </p>
-          </div>
-          <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
-            {forecastDays.map((day) => {
-              const spray = sprayWindow(day);
-              return (
-                <div key={day.date} className="rounded-lg border border-stone-200 px-3 py-2">
-                  <p className="text-xs font-semibold text-stone-500">
-                    {formatDate(new Date(`${day.date}T12:00:00`))}
-                  </p>
-                  <p className="mt-0.5 text-sm font-bold text-stone-900">{weatherText(day.code)}</p>
-                  <p className="text-xs text-stone-500">
-                    {Math.round(day.tempMin)}–{Math.round(day.tempMax)}°C
-                  </p>
-                  <p className="text-xs text-stone-500">{Math.round(day.rainMm)} mm rain</p>
-                  <p className={`mt-1 text-[11px] font-semibold ${spray.suitable ? "text-emerald-600" : "text-amber-600"}`}>
-                    {spray.suitable ? "Spray / fertilize OK" : spray.reason}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-        </Card>
-      ) : null}
-
       <div className="mt-6 grid gap-4">
         <Card>
           <div className="border-b border-stone-100 px-5 py-4">
@@ -256,7 +223,44 @@ export default async function PlannerPage({ searchParams }: { searchParams: Prom
             tasks={calendarTasks}
             paddies={paddies.map((paddy) => ({ id: paddy.id, code: paddy.code, name: paddy.name }))}
             paddyId={paddyFilter}
-          />
+          >
+            {weather ? (
+              <>
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                  <h2 className="text-sm font-bold uppercase tracking-wide text-stone-500">10-day work weather</h2>
+                  <p className="text-xs text-stone-500">
+                    {weather.isDefaultLocation
+                      ? "Set coordinates on a paddy for a local forecast"
+                      : `${weather.location.latitude.toFixed(3)}, ${weather.location.longitude.toFixed(3)}`}
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
+                  {forecastDays.map((day) => {
+                    const spray = sprayWindow(day);
+                    return (
+                      <div key={day.date} className="rounded-lg border border-stone-200 px-3 py-2">
+                        <p className="text-xs font-semibold text-stone-500">
+                          {formatDate(new Date(`${day.date}T12:00:00`))}
+                        </p>
+                        <p className="mt-0.5 text-sm font-bold text-stone-900">{weatherText(day.code)}</p>
+                        <p className="text-xs text-stone-500">
+                          {Math.round(day.tempMin)}–{Math.round(day.tempMax)}°C
+                        </p>
+                        <p className="text-xs text-stone-500">{Math.round(day.rainMm)} mm rain</p>
+                        <p
+                          className={`mt-1 text-[11px] font-semibold ${
+                            spray.suitable ? "text-emerald-600" : "text-amber-600"
+                          }`}
+                        >
+                          {spray.suitable ? "Spray / fertilize OK" : spray.reason}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            ) : null}
+          </FarmCalendar>
         </Card>
       </div>
 

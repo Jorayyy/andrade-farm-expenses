@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { addMonths, monthKey, startOfMonth, toDateInput } from "@/lib/format";
 import { btn, inputClass } from "@/components/ui";
 
@@ -33,16 +34,18 @@ export function FarmCalendar({
   tasks,
   paddies,
   paddyId,
+  children,
 }: {
   tasks: CalendarTask[];
   paddies: CalendarPaddy[];
   paddyId: string | null;
+  children?: ReactNode;
 }) {
   const today = toDateInput(new Date());
   const current = startOfMonth(new Date());
 
-  let first = current;
-  let last = current;
+  let first = addMonths(current, -6);
+  let last = addMonths(current, 6);
   for (const task of tasks) {
     const month = startOfMonth(task.dueDate);
     if (month < first) first = month;
@@ -82,6 +85,8 @@ export function FarmCalendar({
           </button>
         </form>
       </div>
+
+      {children ? <div className="border-b border-stone-100 px-5 py-4">{children}</div> : null}
 
       <div className="max-h-[70vh] overflow-y-auto">
         {months.map((month) => {
