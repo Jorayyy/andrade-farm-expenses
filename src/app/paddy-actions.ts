@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { addDays, normalizeMoistureKg } from "@/lib/agronomy";
+import { addDays, fertilizerPlan, normalizeMoistureKg } from "@/lib/agronomy";
 import { parseDateInput } from "@/lib/format";
 import type { ActionState } from "@/lib/action-state";
 
@@ -230,19 +230,71 @@ export async function generateSeasonTasks(formData: FormData): Promise<void> {
 
   const maturity = season.variety?.maturityDays ?? 114;
   const planted = season.plantingDate;
-  const plan: { offset: number; title: string; type: string; priority?: string }[] = [
-    { offset: -14, title: "Land preparation and leveling", type: "Maintenance" },
-    { offset: -3, title: "Apply basal fertilizer", type: "Fertilizer", priority: "High" },
-    { offset: 0, title: season.method === "Direct-seeded" ? "Sow pre-germinated seed" : "Transplant seedlings", type: "Other" },
-    { offset: 10, title: "Check water depth (target 2–5 cm)", type: "Irrigation" },
-    { offset: 21, title: "First nitrogen topdress", type: "Fertilizer", priority: "High" },
-    { offset: 30, title: "Pest and disease scouting", type: "Scouting" },
-    { offset: 45, title: "Second nitrogen topdress", type: "Fertilizer" },
-    { offset: 55, title: "Pest and disease scouting", type: "Scouting" },
-    { offset: 70, title: "Check water and drainage", type: "Irrigation" },
-    { offset: maturity - 14, title: "Drain the paddy before harvest", type: "Irrigation" },
-    { offset: maturity - 7, title: "Scout for lodging and grain maturity", type: "Scouting" },
-    { offset: maturity, title: "Harvest and record yield", type: "Harvest", priority: "High" },
+  const fertilizer = fertilizerPlan({
+    areaHa: Number(season.paddy.areaHa),
+    nRequirementKgHa: season.variety?.nRequirementKgHa,
+  });
+  const plan: { offset: number; title: string; type: string; priority?: string; notes?: string }[] = [
+    {
+      offset: -14,
+      title: "Land preparation and leveling",
+      type: "Maintenance",
+      notes: "Plow and puddle, level the field, repair dikes and clean the canals.",
+    },
+    ...fertilizer.map((step) => ({
+      offset: step.offset,
+      title: `${step.title} (${step.product})`,
+      type: "Fertilizer",
+      priority: step.offset < 0 || step.title.startsWith("First") ? "High" : undefined,
+      notes: `${step.bags} bag(s) of 50 kg (${step.rateKgHa} kg/ha). ${step.instruction}`,
+    })),
+    {
+      offset: 0,
+      title: season.method === "Direct-seeded" ? "Sow pre-germinated seed" : "Transplant seedlings",
+      type: "Other",
+      notes:
+        season.method === "Direct-seeded"
+          ? "Sow at 2–3 cm depth with 2–5 cm water."
+          : "Transplant 2–3 seedlings per hill at 20 × 20 cm.",
+    },
+    {
+      offset: 10,
+      title: "Check water depth (target 2-5 cm)",
+      type: "Irrigation",
+      notes: "Keep 2–5 cm water during establishment.",
+    },
+    { offset: 30, title: "Pest and disease scouting", type: "Scouting", notes: "Check for pests, diseases and weeds." },
+    {
+      offset: 55,
+      title: "Pest and disease scouting",
+      type: "Scouting",
+      notes: "Check for pests, diseases and weeds.",
+    },
+    {
+      offset: 70,
+      title: "Check water and drainage",
+      type: "Irrigation",
+      notes: "Maintain 2–5 cm water; drain if deeper than 12 cm.",
+    },
+    {
+      offset: maturity - 14,
+      title: "Drain the paddy before harvest",
+      type: "Irrigation",
+      notes: "Stop irrigation and drain so the field firms up for harvest.",
+    },
+    {
+      offset: maturity - 7,
+      title: "Scout for lodging and grain maturity",
+      type: "Scouting",
+      notes: "Check grain colour and stems; harvest when 80–85% of grains are golden.",
+    },
+    {
+      offset: maturity,
+      title: "Harvest and record yield",
+      type: "Harvest",
+      priority: "High",
+      notes: "Harvest, dry to 14% moisture, and record the actual yield.",
+    },
   ];
 
   const dueDates = plan.map((item) => addDays(planted, item.offset));
@@ -266,7 +318,7 @@ export async function generateSeasonTasks(formData: FormData): Promise<void> {
       type: item.type,
       dueDate: item.dueDate,
       priority: item.priority ?? "Normal",
-      notes: `${season.paddy.code} · ${season.label}`,
+      notes: [`${season.paddy.code} · ${season.label}`, item.notes].filter(Boolean).join(" — "),
     }));
 
   if (rows.length) await prisma.task.createMany({ data: rows });

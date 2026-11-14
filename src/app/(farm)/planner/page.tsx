@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { FormModal } from "@/components/paddies/form-modal";
 import { TaskFields } from "@/components/paddies/fields";
+import { FarmCalendar } from "@/components/farm-calendar";
 import { ConfirmButton } from "@/components/modal";
 import {
   Badge,
@@ -31,7 +32,11 @@ import { fallbackForecast, getWeather, sprayWindow, weatherText } from "@/lib/we
 
 export const dynamic = "force-dynamic";
 
-export default async function PlannerPage() {
+type PlannerParams = { paddy?: string };
+
+export default async function PlannerPage({ searchParams }: { searchParams: Promise<PlannerParams> }) {
+  const params = await searchParams;
+
   const paddies = await prisma.paddy.findMany({
     orderBy: { code: "asc" },
     include: {
@@ -45,6 +50,13 @@ export default async function PlannerPage() {
     orderBy: [{ dueDate: "asc" }],
     take: 200,
     include: { paddy: { select: { code: true, name: true } }, season: { select: { label: true } } },
+  });
+
+  const paddyFilter = params.paddy && paddies.some((paddy) => paddy.id === params.paddy) ? params.paddy : null;
+  const calendarTasks = await prisma.task.findMany({
+    where: paddyFilter ? { paddyId: paddyFilter } : {},
+    orderBy: [{ dueDate: "asc" }],
+    include: { paddy: { select: { code: true } } },
   });
 
   const geo = paddies.find((paddy) => paddy.latitude !== null && paddy.longitude !== null);
@@ -96,10 +108,6 @@ export default async function PlannerPage() {
   );
 
   const paddyOptions = paddies.map((paddy) => ({ id: paddy.id, label: `${paddy.code} — ${paddy.name}` }));
-
-  const calendar = openTasks
-    .filter((task) => daysBetween(today, task.dueDate) >= 0 && daysBetween(today, task.dueDate) <= 30)
-    .slice(0, 24);
 
   return (
     <>
@@ -197,7 +205,7 @@ export default async function PlannerPage() {
         </Card>
       ) : null}
 
-      <div className="mt-6 grid gap-4 lg:grid-cols-2">
+      <div className="mt-6 grid gap-4">
         <Card>
           <div className="border-b border-stone-100 px-5 py-4">
             <h2 className="text-sm font-bold uppercase tracking-wide text-stone-500">Work queue</h2>
@@ -243,30 +251,12 @@ export default async function PlannerPage() {
           )}
         </Card>
 
-        <Card>
-          <div className="border-b border-stone-100 px-5 py-4">
-            <h2 className="text-sm font-bold uppercase tracking-wide text-stone-500">Next 30 days</h2>
-          </div>
-          {calendar.length === 0 ? (
-            <EmptyState title="Calendar is clear" description="Tasks scheduled in the next 30 days appear here." />
-          ) : (
-            <ul className="max-h-[28rem] divide-y divide-stone-100 overflow-y-auto">
-              {calendar.map((task) => (
-                <li key={task.id} className="flex items-center justify-between gap-3 px-5 py-2.5">
-                  <div>
-                    <p className="text-sm font-medium text-stone-900">{task.title}</p>
-                    <p className="text-xs text-stone-500">
-                      {task.paddy ? `${task.paddy.code} · ` : ""}
-                      {formatDate(task.dueDate)}
-                    </p>
-                  </div>
-                  <Badge tone={task.type === "Irrigation" ? "blue" : task.type === "Fertilizer" ? "green" : "stone"}>
-                    {task.type}
-                  </Badge>
-                </li>
-              ))}
-            </ul>
-          )}
+        <Card className="overflow-hidden">
+          <FarmCalendar
+            tasks={calendarTasks}
+            paddies={paddies.map((paddy) => ({ id: paddy.id, code: paddy.code, name: paddy.name }))}
+            paddyId={paddyFilter}
+          />
         </Card>
       </div>
 

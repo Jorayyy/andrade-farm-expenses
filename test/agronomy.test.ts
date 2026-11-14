@@ -4,6 +4,7 @@ import {
   addDays,
   daysBetween,
   dailyGdd,
+  fertilizerPlan,
   forecastSeason,
   growthStage,
   normalizeMoistureKg,
@@ -97,6 +98,24 @@ test("water balance drains without rain and holds with heavy rain", () => {
   assert.equal(wet.daysUntilCritical, null);
   assert.ok(wet.projectedDepthCm > 5);
   assert.equal(wet.irrigationNeededMm, 0);
+});
+
+test("fertilizer plan splits nitrogen and scales bags by area", () => {
+  const one = fertilizerPlan({ areaHa: 1, nRequirementKgHa: 120 });
+  assert.equal(one.length, 3);
+  assert.deepEqual(
+    one.map((step) => step.offset),
+    [-3, 21, 45],
+  );
+  assert.equal(one[0].product, "Complete 14-14-14");
+  assert.equal(one[0].bags, 7);
+  assert.equal(one[1].product, "Urea 46-0-0");
+  assert.equal(one[1].bags, 1.5);
+  assert.equal(one[2].bags, 1.5);
+
+  const two = fertilizerPlan({ areaHa: 2, nRequirementKgHa: 120 });
+  assert.equal(two[0].bags, 14);
+  assert.equal(two[1].bags, 3);
 });
 
 test("harvest weight is normalised to 14% moisture", () => {

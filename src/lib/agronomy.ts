@@ -229,6 +229,65 @@ export function forecastSeason(input: ForecastInput): SeasonForecast {
   };
 }
 
+export type FertilizerStep = {
+  offset: number;
+  title: string;
+  product: string;
+  bags: number;
+  rateKgHa: number;
+  instruction: string;
+};
+
+const BAG_KG = 50;
+
+/**
+ * A simple guide built from the variety nitrogen requirement: 40% of N as
+ * basal complete fertilizer, the rest split between two urea topdressings.
+ * Rates are approximate decision aids, not a substitute for a soil test.
+ */
+export function fertilizerPlan(input: {
+  areaHa: number;
+  nRequirementKgHa?: number | null;
+}): FertilizerStep[] {
+  const areaHa = Math.max(0, input.areaHa);
+  const n = Math.max(60, input.nRequirementKgHa ?? 120);
+  const basalBagsHa = Math.max(1, Math.round((n * 0.4) / (BAG_KG * 0.14)));
+  const basalN = basalBagsHa * BAG_KG * 0.14;
+  const ureaBagsHa = Math.max(1, Math.round((n - basalN) / (BAG_KG * 0.46)));
+  const ureaPerSplit = ureaBagsHa / 2;
+  const round = (value: number) => Math.round(value * 10) / 10;
+  const bags = (perHa: number) => round(perHa * areaHa);
+
+  return [
+    {
+      offset: -3,
+      title: "Apply basal fertilizer",
+      product: "Complete 14-14-14",
+      bags: bags(basalBagsHa),
+      rateKgHa: basalBagsHa * BAG_KG,
+      instruction:
+        "Broadcast evenly and incorporate into the soil 1–3 days before transplanting or sowing.",
+    },
+    {
+      offset: 21,
+      title: "First nitrogen topdress",
+      product: "Urea 46-0-0",
+      bags: bags(ureaPerSplit),
+      rateKgHa: round(ureaPerSplit * BAG_KG),
+      instruction:
+        "Drain to 2–3 cm water, broadcast, and keep the field shallow-flooded for a week.",
+    },
+    {
+      offset: 45,
+      title: "Second nitrogen topdress",
+      product: "Urea 46-0-0",
+      bags: bags(ureaPerSplit),
+      rateKgHa: round(ureaPerSplit * BAG_KG),
+      instruction: "Apply at panicle initiation; this is the last nitrogen split before harvest.",
+    },
+  ];
+}
+
 export type WaterBalanceInput = {
   latestDepthCm: number | null;
   targetDepthCm?: number;

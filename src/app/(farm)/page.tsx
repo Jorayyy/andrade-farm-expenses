@@ -1,25 +1,69 @@
 import Link from "next/link";
 import { AlertTriangle, ArrowRight, Package, Scale, TrendingUp, Wallet } from "lucide-react";
 import { ExpensePieChart, MonthlyTrendChart } from "@/components/dashboard-charts";
-import { Badge, Card, EmptyState, PageHeader, StatCard, tdClass, thClass } from "@/components/ui";
+import { Badge, Card, EmptyState, PageHeader, StatCard, btn, inputClass, labelClass, tdClass, thClass } from "@/components/ui";
 import { prisma } from "@/lib/prisma";
 import {
   addMonths,
-  endOfMonth,
+  endOfDay,
   formatDate,
   formatNumber,
   formatPeso,
   monthKey,
   monthLabel,
+  parseDateOnly,
   startOfMonth,
+  toDateInput,
 } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
-export default async function DashboardPage() {
+type Params = { range?: string; from?: string; to?: string };
+
+const RANGE_PRESETS = [
+  { key: "month", label: "This month" },
+  { key: "last-month", label: "Last month" },
+  { key: "season", label: "This season" },
+  { key: "year", label: "This year" },
+  { key: "all", label: "All time" },
+] as const;
+
+function resolveRange(params: Params, now: Date) {
+  const preset = params.range ?? "month";
+  if (preset === "custom") {
+    const to = parseDateOnly(params.to) ?? now;
+    const from = parseDateOnly(params.from) ?? startOfMonth(to);
+    return { from, to, name: "Selected range" };
+  }
+  if (preset === "all") return { from: null, to: now, name: "All time" };
+  if (preset === "last-month") {
+    return {
+      from: new Date(now.getFullYear(), now.getMonth() - 1, 1),
+      to: new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999),
+      name: "Last month",
+    };
+  }
+  if (preset === "year") {
+    return { from: new Date(now.getFullYear(), 0, 1), to: now, name: "This year" };
+  }
+  if (preset === "season") {
+    const month = now.getMonth();
+    const from =
+      month >= 4 && month <= 9
+        ? new Date(now.getFullYear(), 4, 1)
+        : month >= 10
+          ? new Date(now.getFullYear(), 10, 1)
+          : new Date(now.getFullYear() - 1, 10, 1);
+    return { from, to: now, name: "This season" };
+  }
+  return { from: startOfMonth(now), to: now, name: "This month" };
+}
+
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<Params> }) {
+  const params = await searchParams;
   const now = new Date();
-  const monthStart = startOfMonth(now);
-  const monthEnd = endOfMonth(now);
+  const { from, to, name: rangeName } = resolveRange(params, now);
+  const range = from ? { gte: from, lte: endOfDay(to) } : undefined;
   const trendStart = startOfMonth(addMonths(now, -5));
 
   const [
@@ -33,11 +77,11 @@ export default async function DashboardPage() {
     recentIncome,
   ] = await Promise.all([
     prisma.expense.aggregate({
-      where: { date: { gte: monthStart, lte: monthEnd } },
+      where: { date: range },
       _sum: { amount: true },
     }),
     prisma.income.aggregate({
-      where: { date: { gte: monthStart, lte: monthEnd } },
+      where: { date: range },
       _sum: { amount: true },
     }),
     prisma.inventoryItem.findMany({
@@ -45,7 +89,7 @@ export default async function DashboardPage() {
     }),
     prisma.expense.groupBy({
       by: ["category"],
-      where: { date: { gte: monthStart, lte: monthEnd } },
+      where: { date: range },
       _sum: { amount: true },
       orderBy: { _sum: { amount: "desc" } },
     }),
@@ -61,9 +105,9 @@ export default async function DashboardPage() {
     prisma.income.findMany({ orderBy: { date: "desc" }, take: 5 }),
   ]);
 
-  const monthExpenses = Number(expenseTotal._sum.amount ?? 0);
-  const monthIncome = Number(incomeTotal._sum.amount ?? 0);
-  const net = monthIncome - monthExpenses;
+  const rangeExpenses = Number(expenseTotal._sum.amount ?? 0);
+  const rangeIncome = Number(incomeTotal._sum.amount ?? 0);
+  const net = rangeIncome - rangeExpenses;
   const inventoryValue = inventoryItems.reduce(
     (sum, item) => sum + item.quantity * Number(item.unitCost),
     0,
@@ -111,26 +155,63 @@ export default async function DashboardPage() {
     <>
       <PageHeader
         title="Farm overview"
-        subtitle={`${formatDate(monthStart)} – ${formatDate(monthEnd)}`}
+        subtitle={
+          from
+            ? `${rangeName} · ${formatDate(from)} – ${formatDate(to)}`
+            : `${rangeName} · every recorded entry`
+        }
       />
+
+      <Card className="mb-6 p-4">
+        <div className="flex flex-wrap gap-2">
+          {RANGE_PRESETS.map((preset) => (
+            <Link
+              key={preset.key}
+              href={`/?range=${preset.key}`}
+              className={preset.key === (params.range ?? "month") ? btn.primary : btn.secondary}
+            >
+              {preset.label}
+            </Link>
+          ))}
+        </div>
+        <form method="get" className="mt-3 flex flex-wrap items-end gap-3">
+          <input type="hidden" name="range" value="custom" />
+          <label className="block">
+            <span className={labelClass}>From</span>
+            <input
+              type="date"
+              name="from"
+              defaultValue={toDateInput(from ?? startOfMonth(now))}
+              className={inputClass}
+            />
+          </label>
+          <label className="block">
+            <span className={labelClass}>To</span>
+            <input type="date" name="to" defaultValue={toDateInput(to)} className={inputClass} />
+          </label>
+          <button type="submit" className={btn.secondary}>
+            Apply range
+          </button>
+        </form>
+      </Card>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          label="Expenses this month"
-          value={formatPeso(monthExpenses)}
+          label={`Expenses · ${rangeName}`}
+          value={formatPeso(rangeExpenses)}
           icon={<Wallet className="h-5 w-5" />}
           tone="red"
         />
         <StatCard
-          label="Income this month"
-          value={formatPeso(monthIncome)}
+          label={`Income · ${rangeName}`}
+          value={formatPeso(rangeIncome)}
           icon={<TrendingUp className="h-5 w-5" />}
           tone="green"
         />
         <StatCard
-          label="Net this month"
+          label={`Net · ${rangeName}`}
           value={formatPeso(net)}
-          hint={net >= 0 ? "Profitable month" : "Spending exceeds income"}
+          hint={net >= 0 ? "Income covers expenses" : "Spending exceeds income"}
           icon={<Scale className="h-5 w-5" />}
           tone={net >= 0 ? "green" : "red"}
         />
