@@ -42,7 +42,7 @@ export function NavLinks({ compact = false }: { compact?: boolean }) {
             key={item.href}
             href={item.href}
             className={cn(
-              "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-semibold transition",
+              "flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-semibold transition",
               compact ? "shrink-0 whitespace-nowrap" : "",
               active
                 ? "bg-emerald-600 text-white shadow-sm"

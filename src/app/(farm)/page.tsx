@@ -176,7 +176,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         </div>
         <form method="get" className="mt-3 flex flex-wrap items-end gap-3">
           <input type="hidden" name="range" value="custom" />
-          <label className="block">
+          <label className="block w-full sm:w-auto">
             <span className={labelClass}>From</span>
             <input
               type="date"
@@ -185,7 +185,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
               className={inputClass}
             />
           </label>
-          <label className="block">
+          <label className="block w-full sm:w-auto">
             <span className={labelClass}>To</span>
             <input type="date" name="to" defaultValue={toDateInput(to)} className={inputClass} />
           </label>

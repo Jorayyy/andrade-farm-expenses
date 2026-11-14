@@ -185,7 +185,7 @@ export default async function PlannerPage({ searchParams }: { searchParams: Prom
                 const gap = daysBetween(today, task.dueDate);
                 return (
                   <li key={task.id} className="flex items-start justify-between gap-3 px-5 py-3">
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-sm font-medium text-stone-900">{task.title}</p>
                       <p className="text-xs text-stone-500">
                         {task.paddy ? `${task.paddy.code} · ` : ""}
