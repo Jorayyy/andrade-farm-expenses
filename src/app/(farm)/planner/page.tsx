@@ -218,7 +218,7 @@ export default async function PlannerPage({ searchParams }: { searchParams: Prom
           )}
         </Card>
 
-        <Card className="overflow-hidden">
+        <Card id="crop-calendar" className="scroll-mt-28 overflow-hidden">
           <FarmCalendar
             tasks={calendarTasks}
             paddies={paddies.map((paddy) => ({ id: paddy.id, code: paddy.code, name: paddy.name }))}

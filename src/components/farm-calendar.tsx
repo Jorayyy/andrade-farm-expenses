@@ -109,7 +109,7 @@ export function FarmCalendar({
             </Link>
           </span>
         </div>
-        <form method="get" action="/planner" className="flex w-full items-end gap-2 sm:w-auto">
+        <form method="get" action="/planner#crop-calendar" className="flex w-full items-end gap-2 sm:w-auto">
           <div className="min-w-0 flex-1 sm:flex-none">
             <select name="paddy" defaultValue={paddyId ?? ""} className={`${inputClass} py-1.5 text-sm`}>
               <option value="">All paddies</option>

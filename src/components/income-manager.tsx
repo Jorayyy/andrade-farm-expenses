@@ -86,7 +86,7 @@ export function IncomeManager({
 
       {filters}
 
-      <TableShell>
+      <TableShell id="income-list">
         {income.length === 0 ? (
           <EmptyState title="No income recorded" description="Log your first sale or revenue entry." />
         ) : (

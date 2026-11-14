@@ -90,7 +90,7 @@ export function ExpensesManager({
 
       {filters}
 
-      <TableShell>
+      <TableShell id="expenses-list">
         {expenses.length === 0 ? (
           <EmptyState
             title="No expenses found"

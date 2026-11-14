@@ -221,7 +221,8 @@ export default async function PaddyDetailPage({
     if (nextTab !== "overview") search.set("tab", nextTab);
     if (selectedSeason) search.set("season", selectedSeason.id);
     const queryString = search.toString();
-    return queryString ? `/paddies/${paddyId}?${queryString}` : `/paddies/${paddyId}`;
+    const path = queryString ? `/paddies/${paddyId}?${queryString}` : `/paddies/${paddyId}`;
+    return `${path}#paddy-tabs`;
   }
 
   return (
@@ -423,7 +424,7 @@ export default async function PaddyDetailPage({
         ) : null}
       </div>
 
-      <div className="mt-6 flex gap-1 overflow-x-auto border-b border-stone-200 pb-px">
+      <div id="paddy-tabs" className="mt-6 flex scroll-mt-28 gap-1 overflow-x-auto border-b border-stone-200 pb-px">
         {TABS.map((item) => (
           <Link
             key={item.key}
@@ -945,7 +946,7 @@ export default async function PaddyDetailPage({
                     return (
                       <tr key={season.id} className="hover:bg-stone-50">
                         <td className={tdClass}>
-                          <Link href={`/paddies/${paddy.id}?season=${season.id}`} className="font-semibold text-stone-900 hover:text-emerald-700">
+                          <Link href={`/paddies/${paddy.id}?season=${season.id}#paddy-tabs`} className="font-semibold text-stone-900 hover:text-emerald-700">
                             {season.label}
                           </Link>
                           <p className="text-xs text-stone-500">

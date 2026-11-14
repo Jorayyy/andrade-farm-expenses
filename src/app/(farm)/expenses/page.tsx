@@ -126,6 +126,7 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
         page={page}
         pageCount={pageCount}
         params={{ q, category, from, to }}
+        scrollTo="expenses-list"
       />
     </>
   );

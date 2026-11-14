@@ -6,11 +6,13 @@ export function Pagination({
   page,
   pageCount,
   params,
+  scrollTo,
 }: {
   basePath: string;
   page: number;
   pageCount: number;
   params: Record<string, string | undefined>;
+  scrollTo?: string;
 }) {
   if (pageCount <= 1) return null;
 
@@ -21,7 +23,8 @@ export function Pagination({
     }
     if (target > 1) search.set("page", String(target));
     const query = search.toString();
-    return query ? `${basePath}?${query}` : basePath;
+    const hash = scrollTo ? `#${scrollTo}` : "";
+    return query ? `${basePath}?${query}${hash}` : `${basePath}${hash}`;
   }
 
   return (

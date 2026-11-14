@@ -124,6 +124,7 @@ export default async function IncomePage({ searchParams }: { searchParams: Promi
         page={page}
         pageCount={pageCount}
         params={{ q, category, from, to }}
+        scrollTo="income-list"
       />
     </>
   );

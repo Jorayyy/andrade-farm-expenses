@@ -17,9 +17,9 @@ export const btn = {
     "inline-flex items-center justify-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold text-stone-500 transition hover:bg-stone-100 hover:text-stone-800",
 };
 
-export function Card({ className, children }: { className?: string; children: ReactNode }) {
+export function Card({ className, children, id }: { className?: string; children: ReactNode; id?: string }) {
   return (
-    <div className={cn("rounded-xl border border-stone-200 bg-white shadow-sm", className)}>
+    <div id={id} className={cn("rounded-xl border border-stone-200 bg-white shadow-sm", className)}>
       {children}
     </div>
   );
@@ -142,10 +142,12 @@ export function EmptyState({ title, description }: { title: string; description?
   );
 }
 
-export function TableShell({ children }: { children: ReactNode }) {
+export function TableShell({ children, id }: { children: ReactNode; id?: string }) {
   return (
     <Card className="overflow-hidden">
-      <div className="overflow-x-auto">{children}</div>
+      <div id={id} className="scroll-mt-28 overflow-x-auto">
+        {children}
+      </div>
     </Card>
   );
 }
