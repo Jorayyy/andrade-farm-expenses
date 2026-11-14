@@ -122,15 +122,15 @@ export default async function PaddiesPage() {
 
   const varietyOptions = varieties.map((variety) => ({
     id: variety.id,
-    label: `${variety.name} Â· ${variety.maturityDays} d`,
+    label: `${variety.name} · ${variety.maturityDays} d`,
   }));
-  const paddyOptions = paddies.map((paddy) => ({ id: paddy.id, label: `${paddy.code} â€” ${paddy.name}` }));
+  const paddyOptions = paddies.map((paddy) => ({ id: paddy.id, label: `${paddy.code} — ${paddy.name}` }));
 
   return (
     <>
       <PageHeader
         title="Rice paddies"
-        subtitle={`${formatNumber(totalArea, 2)} ha across ${paddies.length} paddy${paddies.length === 1 ? "" : "s"} Â· ${formatNumber(plantedArea, 2)} ha planted`}
+        subtitle={`${formatNumber(totalArea, 2)} ha across ${paddies.length} paddy${paddies.length === 1 ? "" : "s"} · ${formatNumber(plantedArea, 2)} ha planted`}
         actions={
           <>
             <Link href="/planner" className={btn.secondary}>
@@ -188,7 +188,7 @@ export default async function PaddiesPage() {
             <StatCard
               label="Planted area"
               value={`${formatNumber(plantedArea, 2)} ha`}
-              hint={totalArea ? `${Math.round((plantedArea / totalArea) * 100)}% of the farm` : "â€”"}
+              hint={totalArea ? `${Math.round((plantedArea / totalArea) * 100)}% of the farm` : "—"}
               icon={<MapPin className="h-5 w-5" />}
               tone="amber"
             />
@@ -198,7 +198,7 @@ export default async function PaddiesPage() {
             <Card className="mt-6 p-5">
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <h2 className="text-sm font-bold uppercase tracking-wide text-stone-500">
-                  Field weather Â· next 5 days
+                  Field weather · next 5 days
                 </h2>
                 <p className="text-xs text-stone-500">
                   {weather.isDefaultLocation
@@ -214,7 +214,7 @@ export default async function PaddiesPage() {
                     </p>
                     <p className="mt-1 text-sm font-bold text-stone-900">{weatherText(day.code)}</p>
                     <p className="text-xs text-stone-500">
-                      {Math.round(day.tempMin)}â€“{Math.round(day.tempMax)}Â°C Â· {Math.round(day.rainMm)} mm rain
+                      {Math.round(day.tempMin)}–{Math.round(day.tempMax)}°C · {Math.round(day.rainMm)} mm rain
                     </p>
                   </div>
                 ))}
@@ -260,7 +260,7 @@ export default async function PaddiesPage() {
                           <>
                             <p className="font-medium text-stone-800">{season.label}</p>
                             <p className="text-xs text-stone-500">
-                              {season.variety?.name ?? "No variety"} Â· {season.method}
+                              {season.variety?.name ?? "No variety"} · {season.method}
                             </p>
                           </>
                         ) : (
@@ -273,7 +273,7 @@ export default async function PaddiesPage() {
                             {forecast.stage.label}
                           </Badge>
                         ) : (
-                          <Badge tone="stone">â€”</Badge>
+                          <Badge tone="stone">—</Badge>
                         )}
                       </td>
                       <td className={tdClass}>
@@ -298,15 +298,15 @@ export default async function PaddiesPage() {
                               {formatNumber(forecast.forecastKg / 1000, 2)} t
                             </p>
                             <p className="text-xs text-stone-500">
-                              {formatNumber(forecast.forecastYieldTha, 2)} t/ha Â±{forecast.confidencePct}%
+                              {formatNumber(forecast.forecastYieldTha, 2)} t/ha ±{forecast.confidencePct}%
                             </p>
                           </>
                         ) : (
-                          <span className="text-stone-400">â€”</span>
+                          <span className="text-stone-400">—</span>
                         )}
                       </td>
                       <td className={tdClass}>
-                        {forecast.harvestDate ? formatDate(forecast.harvestDate) : <span className="text-stone-400">â€”</span>}
+                        {forecast.harvestDate ? formatDate(forecast.harvestDate) : <span className="text-stone-400">—</span>}
                       </td>
                       <td className={tdClass}>
                         <div className="flex items-center justify-end gap-1">
@@ -394,7 +394,7 @@ export default async function PaddiesPage() {
                     {rows
                       .filter((row) => row.state === "critical" || row.state === "low")
                       .map((row) => `${row.paddy.code} (${WATER_STATE_LABEL[row.state]})`)
-                      .join(" Â· ")}
+                      .join(" · ")}
                   </p>
                 </div>
               </div>
